@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dédalo - Protótipo do Sistema de Gestão de Auditorias</title>
+<style>
+  :root {
+    --primary: #1F3A5F;
+    --primary-light: #3A6FA0;
+    --accent: #E8B842;
+    --bg: #F4F6FA;
+    --card: #FFFFFF;
+    --border: #E1E5EC;
+    --text: #1A2235;
+    --text-muted: #6B7588;
+    --success: #2E9367;
+    --warning: #D89B2A;
+    --danger: #C44545;
+    --info: #3D7AC9;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.5;
+  }
+  /* LAYOUT */
+  .app { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+  .app.no-sidebar { grid-template-columns: 1fr; }
+  .sidebar {
+    background: var(--primary); color: #fff; padding: 24px 0;
+    position: sticky; top: 0; height: 100vh; overflow-y: auto;
+  }
+  .sidebar .logo { padding: 0 24px 24px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+  .sidebar .logo h1 { font-size: 22px; font-weight: 700; letter-spacing: 1px; }
+  .sidebar .logo span { font-size: 11px; color: rgba(255,255,255,0.6); text-transform: uppercase; }
+  .sidebar nav { padding: 16px 0; }
+  .sidebar nav a {
+    display: flex; align-items: center; gap: 12px; padding: 11px 24px;
+    color: rgba(255,255,255,0.75); text-decoration: none; font-size: 14px;
+    border-left: 3px solid transparent; transition: all 0.15s;
+  }
+  .sidebar nav a:hover { background: rgba(255,255,255,0.05); color: #fff; }
+  .sidebar nav a.active { background: rgba(255,255,255,0.08); color: #fff; border-left-color: var(--accent); }
+  .sidebar nav .section { padding: 16px 24px 8px; font-size: 11px; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 1px; }
+  .sidebar .user {
+    margin-top: auto; padding: 16px 24px; border-top: 1px solid rgba(255,255,255,0.1);
+    position: absolute; bottom: 0; left: 0; right: 0; background: var(--primary);
+  }
+  .sidebar .user .name { font-size: 13px; font-weight: 600; }
+  .sidebar .user .role { font-size: 11px; color: rgba(255,255,255,0.6); }
+
+  .main { padding: 24px 32px; max-width: 1400px; }
+  .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+  .topbar h2 { font-size: 24px; font-weight: 700; }
+  .topbar .crumb { color: var(--text-muted); font-size: 13px; }
+  .topbar .actions { display: flex; gap: 12px; }
+
+  /* COMPONENTS */
+  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 9px 16px; border-radius: 6px;
+         font-weight: 600; font-size: 13px; cursor: pointer; border: none; transition: all 0.15s;
+         text-decoration: none; }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-primary:hover { background: var(--primary-light); }
+  .btn-secondary { background: #fff; color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { background: var(--bg); }
+  .btn-accent { background: var(--accent); color: #1A1A1A; }
+  .btn-success { background: var(--success); color: #fff; }
+  .btn-danger { background: var(--danger); color: #fff; }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+  .btn-ghost { background: transparent; color: var(--primary-light); }
+
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 20px; }
+  .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .card-title { font-size: 16px; font-weight: 700; }
+
+  .grid { display: grid; gap: 16px; }
+  .grid-4 { grid-template-columns: repeat(4, 1fr); }
+  .grid-3 { grid-template-columns: repeat(3, 1fr); }
+  .grid-2 { grid-template-columns: repeat(2, 1fr); }
+  @media (max-width: 900px) { .grid-4 { grid-template-columns: repeat(2,1fr); } .grid-3 { grid-template-columns: 1fr; } .grid-2 { grid-template-columns: 1fr; } }
+
+  .kpi { background: #fff; padding: 18px 20px; border-radius: 10px; border: 1px solid var(--border); }
+  .kpi .label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .kpi .value { font-size: 28px; font-weight: 700; margin-top: 6px; color: var(--primary); }
+  .kpi .delta { font-size: 12px; margin-top: 4px; }
+  .kpi .delta.up { color: var(--success); }
+  .kpi .delta.down { color: var(--danger); }
+
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--border); font-size: 13px; }
+  th { font-weight: 600; color: var(--text-muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; background: #FAFBFD; }
+  tr:hover td { background: #FAFBFD; }
+
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+  .badge-planejada { background: #E3EEFA; color: #1F5897; }
+  .badge-execucao { background: #FFF2D6; color: #B8801C; }
+  .badge-concluida { background: #D9F1E5; color: #1E6D45; }
+  .badge-atrasada { background: #FAE0E0; color: #A82F2F; }
+  .badge-pendente { background: #EDE5FA; color: #6A40B5; }
+
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  .form-row.full { grid-template-columns: 1fr; }
+  label { font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 0.5px; }
+  input, select, textarea { width: 100%; padding: 9px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; font-family: inherit; }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary-light); box-shadow: 0 0 0 3px rgba(58,111,160,0.1); }
+  textarea { resize: vertical; min-height: 80px; }
+
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+  .tabs a { padding: 10px 18px; color: var(--text-muted); text-decoration: none; font-weight: 600; font-size: 13px;
+            border-bottom: 2px solid transparent; cursor: pointer; }
+  .tabs a.active { color: var(--primary); border-bottom-color: var(--primary); }
+  .tabs a:hover:not(.active) { color: var(--text); }
+
+  /* LOGIN PAGE */
+  .login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center;
+                background: linear-gradient(135deg, #1F3A5F 0%, #3A6FA0 100%); }
+  .login-card { background: #fff; border-radius: 14px; padding: 40px; width: 420px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+  .login-card h1 { text-align: center; color: var(--primary); font-size: 32px; margin-bottom: 4px; letter-spacing: 2px; }
+  .login-card .subtitle { text-align: center; color: var(--text-muted); font-size: 14px; margin-bottom: 32px; }
+  .sso-btn { width: 100%; padding: 13px; background: #fff; border: 2px solid var(--border); border-radius: 8px;
+             display: flex; align-items: center; justify-content: center; gap: 12px; cursor: pointer; font-weight: 600;
+             margin-bottom: 12px; font-size: 14px; transition: all 0.15s; }
+  .sso-btn:hover { border-color: var(--primary-light); background: var(--bg); }
+  .sso-btn svg { width: 22px; height: 22px; }
+  .login-footer { text-align: center; font-size: 12px; color: var(--text-muted); margin-top: 24px; }
+
+  /* CHECKLIST */
+  .checklist-item { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 16px;
+                    margin-bottom: 12px; }
+  .checklist-item .code { font-weight: 700; color: var(--primary); font-size: 13px; }
+  .checklist-item .desc { color: var(--text); margin: 6px 0 12px; }
+  .classification { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  .classification label { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px;
+                          border: 1px solid var(--border); border-radius: 6px; cursor: pointer; font-size: 12px;
+                          text-transform: none; letter-spacing: 0; font-weight: 500; color: var(--text); margin: 0;}
+  .classification label.selected { border-color: var(--primary); background: rgba(31,58,95,0.05); font-weight: 700; }
+  .classification input { width: auto; margin: 0; }
+
+  /* NOTIFICATIONS */
+  .notification { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .notification:last-child { border-bottom: none; }
+  .notification .dot { width: 10px; height: 10px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+  .notification .dot.info { background: var(--info); }
+  .notification .dot.warning { background: var(--warning); }
+  .notification .dot.success { background: var(--success); }
+  .notification .dot.danger { background: var(--danger); }
+  .notification .content .title { font-weight: 600; font-size: 13px; }
+  .notification .content .desc { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .notification .content .time { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
+  /* PAGES */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* INFO BANNER */
+  .info-banner { background: #FFF8E6; border: 1px solid var(--accent); border-radius: 8px; padding: 12px 16px;
+                 margin-bottom: 20px; font-size: 13px; color: #735417; display: flex; align-items: center; gap: 10px; }
+
+  /* SIMPLE PROGRESS */
+  .progress { background: var(--bg); border-radius: 4px; height: 6px; overflow: hidden; }
+  .progress > div { height: 100%; background: var(--primary-light); }
+
+  /* AVATAR */
+  .avatar { width: 32px; height: 32px; background: var(--primary-light); color: #fff; border-radius: 50%;
+            display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; }
+
+  /* PROTOTYPE BANNER */
+  .proto-banner { position: fixed; bottom: 16px; right: 16px; background: var(--primary); color: #fff;
+                  padding: 10px 16px; border-radius: 30px; font-size: 12px; font-weight: 600; z-index: 100;
+                  box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
+
+  /* MODAL (faux) */
+  .modal-overlay { display:none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 200;
+                   align-items: center; justify-content: center; }
+  .modal-overlay.show { display: flex; }
+  .modal { background: #fff; border-radius: 12px; padding: 28px; width: 600px; max-width: 90vw; max-height: 90vh; overflow-y: auto; }
+  .modal h3 { font-size: 20px; margin-bottom: 20px; }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px; }
+
+  .pill { display: inline-block; padding: 2px 8px; background: var(--bg); border-radius: 4px; font-size: 11px; color: var(--text-muted); margin-right: 4px; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN PAGE -->
+<div id="page-login" class="page active">
+  <div class="login-wrap">
+    <div class="login-card">
+      <h1>DÉDALO</h1>
+      <div class="subtitle">Sistema de Gestão de Auditorias</div>
+      <button class="sso-btn" onclick="login('admin')">
+        <svg viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8a12 12 0 1 1 0-24c3 0 5.8 1.2 8 3l5.7-5.7C33.6 6.1 29 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.6-.4-3.9z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 16 18.9 13 24 13c3 0 5.8 1.2 8 3l5.7-5.7C33.6 6.1 29 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5 0 9.5-1.9 13-5l-6-5.1c-1.9 1.3-4.2 2.1-7 2.1-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.6 39.7 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4 5.7l6 5.1c-.4.4 6.4-4.6 6.4-14.8 0-1.3-.1-2.6-.4-3.9z"/></svg>
+        Entrar com Google
+      </button>
+      <button class="sso-btn" onclick="login('admin')">
+        <svg viewBox="0 0 23 23"><path fill="#F35325" d="M1 1h10v10H1z"/><path fill="#81BC06" d="M12 1h10v10H12z"/><path fill="#05A6F0" d="M1 12h10v10H1z"/><path fill="#FFBA08" d="M12 12h10v10H12z"/></svg>
+        Entrar com Microsoft
+      </button>
+      <div class="login-footer">Acesso exclusivo via SSO corporativo<br>Dédalo Auditoria • LGPD compliant</div>
+
+      <div style="margin-top:24px; padding-top:16px; border-top:1px dashed var(--border); font-size:11px; color:var(--text-muted);">
+        <strong>Protótipo:</strong> escolha o perfil para entrar
+        <div style="display:flex; gap:6px; margin-top:8px;">
+          <button class="btn btn-sm btn-secondary" onclick="login('admin')">Admin</button>
+          <button class="btn btn-sm btn-secondary" onclick="login('auditor')">Auditor</button>
+          <button class="btn btn-sm btn-secondary" onclick="login('financeiro')">Financeiro</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="page-app" class="page">
+  <div class="app">
+    <aside class="sidebar">
+      <div class="logo">
+        <h1>DÉDALO</h1>
+        <span>Gestão de Auditorias</span>
+      </div>
+      <div id="console-badge" style="margin: 0 24px 12px; padding: 6px 10px; background: rgba(232,184,66,0.15); color: var(--accent); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; border-radius: 4px; text-align: center;">Console Administrativa</div>
+      <nav id="nav-main">
+        <a onclick="go('dashboard')" class="active" data-page="dashboard">📊 Dashboard</a>
+        <div class="section" data-roles="admin">Cadastros (Gestão)</div>
+        <a onclick="go('auditores')" data-page="auditores" data-roles="admin">👥 Auditores</a>
+        <a onclick="go('clientes')" data-page="clientes" data-roles="admin">🏢 Clientes</a>
+        <a onclick="go('normas')" data-page="normas" data-roles="admin">📚 Normas &amp; Controles</a>
+        <a onclick="go('processos')" data-page="processos" data-roles="admin">🔄 Processos</a>
+        <div class="section" data-roles="admin">Operação</div>
+        <div class="section" data-roles="auditor">Minhas Auditorias</div>
+        <a onclick="go('auditorias')" data-page="auditorias">📋 Auditorias</a>
+        <a onclick="go('cronograma')" data-page="cronograma" data-roles="admin">📅 Cronograma</a>
+        <div class="section">Financeiro</div>
+        <a onclick="go('pagamentos')" data-page="pagamentos">💰 Pagamentos</a>
+        <div class="section">Sistema</div>
+        <a onclick="go('notificacoes')" data-page="notificacoes">🔔 Notificações</a>
+        <a onclick="go('configuracoes')" data-page="configuracoes" data-roles="admin">⚙️ Configurações</a>
+      </nav>
+      <div class="user">
+        <div class="name" id="user-name">Marcos Gomes</div>
+        <div class="role" id="user-role">Administrador</div>
+        <a onclick="logout()" style="color:rgba(255,255,255,0.6); font-size:11px; text-decoration:none; display:block; margin-top:6px; cursor:pointer;">Sair</a>
+      </div>
+    </aside>
+
+    <main class="main">
+
+      <!-- DASHBOARD -->
+      <section id="view-dashboard" class="view active">
+        <div class="topbar">
+          <div>
+            <div class="crumb">Início</div>
+            <h2>Dashboard</h2>
+          </div>
+          <div class="actions">
+            <button class="btn btn-secondary" onclick="go('cronograma')">Ver Cronograma</button>
+            <button class="btn btn-primary" onclick="openModal('nova-auditoria')">+ Nova Auditoria</button>
+          </div>
+        </div>
+
+        <div class="info-banner" data-roles="admin">
+          ⚠️ <strong>3 auditorias com relatório atrasado.</strong> 2 certificados de auditores vencem nos próximos 30 dias.
+        </div>
+
+        <div class="grid grid-4" style="margin-bottom: 24px;">
+          <div class="kpi"><div class="label">Auditorias em Junho</div><div class="value">18</div><div class="delta up">↑ 12% vs maio</div></div>
+          <div class="kpi"><div class="label">Em Execução</div><div class="value">5</div><div class="delta">2 finalizam essa semana</div></div>
+          <div class="kpi"><div class="label">Relatórios Atrasados</div><div class="value" style="color:var(--danger)">3</div><div class="delta down">Requer atenção</div></div>
+          <div class="kpi"><div class="label">Pagamentos Pendentes</div><div class="value">R$ 42.5k</div><div class="delta">7 NFs em aberto</div></div>
+        </div>
+
+        <div class="grid grid-2" style="margin-bottom: 24px;">
+          <div class="card">
+            <div class="card-header"><div class="card-title">Próximas Auditorias</div><a class="btn-ghost" onclick="go('auditorias')" style="cursor:pointer">Ver todas →</a></div>
+            <table>
+              <thead><tr><th>Cliente</th><th>Norma</th><th>Auditor</th><th>Data</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr><td>Acme Indústria</td><td>ISO 9001</td><td><span class="avatar">JS</span> João Silva</td><td>08/06</td><td><span class="badge badge-planejada">Planejada</span></td></tr>
+                <tr><td>Beta Tech</td><td>ISO 27001</td><td><span class="avatar">MA</span> Maria Alves</td><td>10/06</td><td><span class="badge badge-pendente">Plano Pendente</span></td></tr>
+                <tr><td>Gamma Saúde</td><td>ISO 13485</td><td><span class="avatar">CR</span> Carlos Rocha</td><td>12/06</td><td><span class="badge badge-planejada">Planejada</span></td></tr>
+                <tr><td>Delta Logística</td><td>ISO 45001</td><td><span class="avatar">JS</span> João Silva</td><td>15/06</td><td><span class="badge badge-execucao">Em Execução</span></td></tr>
+                <tr><td>Acme Indústria</td><td>ISO 14001</td><td><span class="avatar">RC</span> Renata Costa</td><td>18/06</td><td><span class="badge badge-planejada">Planejada</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="card">
+            <div class="card-title" style="margin-bottom:16px;">Notificações Recentes</div>
+            <div class="notification"><div class="dot warning"></div><div class="content"><div class="title">Lembrete: plano de auditoria</div><div class="desc">Acme Indústria - ISO 9001 (em 30 dias)</div><div class="time">há 2 horas</div></div></div>
+            <div class="notification"><div class="dot success"></div><div class="content"><div class="title">Plano enviado</div><div class="desc">Beta Tech - João Silva subiu o plano</div><div class="time">há 5 horas</div></div></div>
+            <div class="notification"><div class="dot info"></div><div class="content"><div class="title">Nova solicitação de pagamento</div><div class="desc">R$ 4.800 - Maria Alves (Theta Corp)</div><div class="time">ontem</div></div></div>
+            <div class="notification"><div class="dot danger"></div><div class="content"><div class="title">Relatório atrasado</div><div class="desc">Omega Ltd - prazo expirou há 3 dias</div><div class="time">ontem</div></div></div>
+            <div class="notification"><div class="dot warning"></div><div class="content"><div class="title">Certificado a vencer</div><div class="desc">Carlos Rocha - IRCA ISO 27001 (45 dias)</div><div class="time">2 dias atrás</div></div></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title" style="margin-bottom:16px;">Ocupação dos Auditores (Junho)</div>
+          <div class="grid grid-3">
+            <div><div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span><span class="avatar">JS</span> João Silva</span><span>85%</span></div><div class="progress"><div style="width:85%"></div></div></div>
+            <div><div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span><span class="avatar">MA</span> Maria Alves</span><span>62%</span></div><div class="progress"><div style="width:62%"></div></div></div>
+            <div><div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span><span class="avatar">CR</span> Carlos Rocha</span><span>78%</span></div><div class="progress"><div style="width:78%"></div></div></div>
+            <div><div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span><span class="avatar">RC</span> Renata Costa</span><span>45%</span></div><div class="progress"><div style="width:45%"></div></div></div>
+            <div><div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span><span class="avatar">PF</span> Paulo Ferreira</span><span>92%</span></div><div class="progress"><div style="width:92%; background:var(--warning)"></div></div></div>
+            <div><div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span><span class="avatar">LM</span> Luiza Mendes</span><span>30%</span></div><div class="progress"><div style="width:30%"></div></div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- AUDITORES -->
+      <section id="view-auditores" class="view" style="display:none">
+        <div class="topbar">
+          <div><div class="crumb">Cadastros</div><h2>Auditores</h2></div>
+          <div class="actions">
+            <button class="btn btn-secondary">Exportar</button>
+            <button class="btn btn-primary" onclick="openModal('novo-auditor')">+ Novo Auditor</button>
+          </div>
+        </div>
+        <div class="card">
+          <div style="display:flex; gap:12px; margin-bottom:16px;">
+            <input type="text" placeholder="Buscar por nome, CPF ou e-mail..." style="flex:1">
+            <select style="width:200px"><option>Todas as normas</option><option>ISO 9001</option><option>ISO 27001</option><option>ISO 14001</option></select>
+            <select style="width:160px"><option>Status: Todos</option><option>Ativos</option><option>Inativos</option></select>
+          </div>
+          <table>
+            <thead><tr><th>Nome</th><th>E-mail</th><th>Normas</th><th>Certificados</th><th>Ocupação</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+              <tr><td><span class="avatar">JS</span> João Silva</td><td>joao@dedalo.com.br</td><td><span class="pill">ISO 9001</span><span class="pill">ISO 14001</span></td><td>3 vigentes</td><td>85%</td><td><span class="badge badge-concluida">Ativo</span></td><td><a class="btn-ghost" style="cursor:pointer">Editar</a></td></tr>
+              <tr><td><span class="avatar">MA</span> Maria Alves</td><td>maria@dedalo.com.br</td><td><span class="pill">ISO 27001</span><span class="pill">ISO 22301</span></td><td>4 vigentes</td><td>62%</td><td><span class="badge badge-concluida">Ativo</span></td><td><a class="btn-ghost" style="cursor:pointer">Editar</a></td></tr>
+              <tr><td><span class="avatar">CR</span> Carlos Rocha</td><td>carlos@dedalo.com.br</td><td><span class="pill">ISO 27001</span><span class="pill">ISO 13485</span></td><td>2 vigentes, <span style="color:var(--warning)">1 vence em 45d</span></td><td>78%</td><td><span class="badge badge-concluida">Ativo</span></td><td><a class="btn-ghost" style="cursor:pointer">Editar</a></td></tr>
+              <tr><td><span class="avatar">RC</span> Renata Costa</td><td>renata@dedalo.com.br</td><td><span class="pill">ISO 14001</span><span class="pill">ISO 45001</span></td><td>3 vigentes</td><td>45%</td><td><span class="badge badge-concluida">Ativo</span></td><td><a class="btn-ghost" style="cursor:pointer">Editar</a></td></tr>
+              <tr><td><span class="avatar">PF</span> Paulo Ferreira</td><td>paulo@dedalo.com.br</td><td><span class="pill">ISO 9001</span><span class="pill">ISO 45001</span><span class="pill">ISO 37001</span></td><td>5 vigentes</td><td>92%</td><td><span class="badge badge-concluida">Ativo</span></td><td><a class="btn-ghost" style="cursor:pointer">Editar</a></td></tr>
+              <tr><td><span class="avatar">LM</span> Luiza Mendes</td><td>luiza@dedalo.com.br</td><td><span class="pill">ISO 9001</span></td><td>1 vigente</td><td>30%</td><td><span class="badge badge-concluida">Ativo</span></td><td><a class="btn-ghost" style="cursor:pointer">Editar</a></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- CLIENTES -->
+      <section id="view-clientes" class="view" style="display:none">
+        <div class="topbar">
+          <div><div class="crumb">Cadastros</div><h2>Clientes</h2></div>
+          <div class="actions"><button class="btn btn-primary" onclick="openModal('novo-cliente')">+ Novo Cliente</button></div>
+        </div>
+        <div class="card">
+          <div style="display:flex; gap:12px; margin-bottom:16px;">
+            <input type="text" placeholder="Buscar por razão social ou CNPJ..." style="flex:1">
+            <select style="width:200px"><option>Todas as normas</option></select>
+            <select style="width:160px"><option>Periodicidade</option><option>Anual</option><option>Semestral</option></select>
+          </div>
+          <table>
+            <thead><tr><th>Cliente</th><th>CNPJ</th><th>Normas Contratadas</th><th>Periodicidade</th><th>Contrato</th><th></th></tr></thead>
+            <tbody>
+              <tr><td><strong>Acme Indústria S.A.</strong><br><span style="color:var(--text-muted); font-size:12px">Indústria • 1.200 colaboradores</span></td><td>12.345.678/0001-90</td><td><span class="pill">ISO 9001</span><span class="pill">ISO 14001</span><span class="pill">ISO 45001</span></td><td>Anual</td><td>Até 03/2027</td><td><a class="btn-ghost" style="cursor:pointer">Detalhes</a></td></tr>
+              <tr><td><strong>Beta Tech Ltda.</strong><br><span style="color:var(--text-muted); font-size:12px">Tecnologia • 180 colaboradores</span></td><td>23.456.789/0001-12</td><td><span class="pill">ISO 27001</span><span class="pill">ISO 22301</span></td><td>Semestral</td><td>Até 12/2026 <span style="color:var(--warning)">⚠ 6 meses</span></td><td><a class="btn-ghost" style="cursor:pointer">Detalhes</a></td></tr>
+              <tr><td><strong>Gamma Saúde Hospital</strong><br><span style="color:var(--text-muted); font-size:12px">Saúde • 850 colaboradores</span></td><td>34.567.890/0001-23</td><td><span class="pill">ISO 13485</span><span class="pill">ISO 9001</span></td><td>Anual</td><td>Até 08/2027</td><td><a class="btn-ghost" style="cursor:pointer">Detalhes</a></td></tr>
+              <tr><td><strong>Delta Logística</strong><br><span style="color:var(--text-muted); font-size:12px">Logística • 420 colaboradores</span></td><td>45.678.901/0001-34</td><td><span class="pill">ISO 45001</span><span class="pill">ISO 14001</span></td><td>Anual</td><td>Até 11/2026</td><td><a class="btn-ghost" style="cursor:pointer">Detalhes</a></td></tr>
+              <tr><td><strong>Omega Ltd</strong><br><span style="color:var(--text-muted); font-size:12px">Financeiro • 95 colaboradores</span></td><td>56.789.012/0001-45</td><td><span class="pill">ISO 27001</span><span class="pill">ISO 37001</span></td><td>Anual</td><td>Até 02/2028</td><td><a class="btn-ghost" style="cursor:pointer">Detalhes</a></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- NORMAS & CONTROLES -->
+      <section id="view-normas" class="view" style="display:none">
+        <div class="topbar">
+          <div><div class="crumb">Cadastros (Gestão)</div><h2>Normas &amp; Controles</h2></div>
+          <div class="actions">
+            <button class="btn btn-secondary">Importar CSV</button>
+            <button class="btn btn-primary" onclick="openModal('nova-norma')">+ Nova Norma</button>
+          </div>
+        </div>
+        <div class="grid grid-2" style="margin-bottom:20px;">
+          <div class="card">
+            <div class="card-title" style="margin-bottom:12px;">Normas Cadastradas</div>
+            <table>
+              <thead><tr><th>Norma</th><th>Família</th><th>Controles</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr style="cursor:pointer"><td><strong>ISO 9001:2015</strong></td><td>Qualidade</td><td>42</td><td><span class="badge badge-concluida">Ativa</span></td></tr>
+                <tr style="cursor:pointer"><td><strong>ISO 27001:2022</strong></td><td>Segurança da Informação</td><td>93</td><td><span class="badge badge-concluida">Ativa</span></td></tr>
+                <tr><td><strong>ISO 14001:2015</strong></td><td>Meio Ambiente</td><td>38</td><td><span class="badge badge-concluida">Ativa</span></td></tr>
+                <tr><td><strong>ISO 45001:2018</strong></td><td>SST</td><td>41</td><td><span class="badge badge-concluida">Ativa</span></td></tr>
+                <tr><td><strong>ISO 37001:2016</strong></td><td>Antissuborno</td><td>35</td><td><span class="badge badge-concluida">Ativa</span></td></tr>
+                <tr><td><strong>ISO 13485:2016</strong></td><td>Dispositivos Médicos</td><td>52</td><td><span class="badge badge-concluida">Ativa</span></td></tr>
+                <tr><td><strong>LGPD - Framework Dédalo</strong></td><td>Privacidade</td><td>28</td><td><span class="badge badge-concluida">Ativa</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="card">
+            <div class="card-title" style="margin-bottom:12px;">ISO 9001:2015 — Controles</div>
+            <div style="font-size:13px;">
+              <div style="padding:10px; border-bottom:1px solid var(--border);"><strong>4.</strong> Contexto da organização <span class="pill" style="margin-left:6px;">Gestão</span></div>
+              <div style="padding:10px; border-bottom:1px solid var(--border);"><strong>5.</strong> Liderança <span class="pill" style="margin-left:6px;">Gestão</span></div>
+              <div style="padding:10px; border-bottom:1px solid var(--border);"><strong>6.</strong> Planejamento <span class="pill" style="margin-left:6px;">Gestão</span></div>
+              <div style="padding:10px; border-bottom:1px solid var(--border);"><strong>7.</strong> Apoio
+                <div style="padding-left:16px; margin-top:6px; color:var(--text-muted); font-size:12px;">
+                  7.1.5.2 — Rastreabilidade de medição <span class="pill" style="background:#E3EEFA; color:#1F5897;">Produção</span><span class="pill" style="background:#E3EEFA; color:#1F5897;">Qualidade</span><br>
+                  7.2 — Competência <span class="pill" style="background:#E3EEFA; color:#1F5897;">RH</span>
+                </div>
+              </div>
+              <div style="padding:10px; border-bottom:1px solid var(--border);"><strong>8.</strong> Operação <span class="pill" style="margin-left:6px;">Produção</span><span class="pill">Compras</span></div>
+              <div style="padding:10px;"><strong>9.</strong> Avaliação de desempenho <span class="pill" style="margin-left:6px;">Gestão</span></div>
+            </div>
+            <div class="info-banner" style="margin-top:12px;">💡 Clique em um controle para editar título, descrição, hierarquia e os <strong>processos associados</strong>.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PROCESSOS -->
+      <section id="view-processos" class="view" style="display:none">
+        <div class="topbar">
+          <div><div class="crumb">Cadastros (Gestão)</div><h2>Processos</h2></div>
+          <div class="actions"><button class="btn btn-primary" onclick="openModal('novo-processo')">+ Novo Processo</button></div>
+        </div>
+        <div class="info-banner">📌 <strong>Para que serve:</strong> os processos são o eixo pelo qual o auditor filtra a execução em campo. Ao auditar "Gestão de RH", o checklist mostra apenas os controles dessa categoria — sem precisar percorrer a norma inteira.</div>
+        <div class="card">
+          <div style="display:flex; gap:12px; margin-bottom:16px;">
+            <input type="text" placeholder="Buscar processo..." style="flex:1">
+            <select style="width:200px"><option>Todas as categorias</option><option>Operacional</option><option>Suporte</option><option>Gestão</option></select>
+          </div>
+          <table>
+            <thead><tr><th>Código</th><th>Processo</th><th>Categoria</th><th>Controles Vinculados</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+              <tr><td><strong>RH</strong></td><td>Gestão de Recursos Humanos</td><td><span class="pill">Suporte</span></td><td>14 controles em 4 normas</td><td><span class="badge badge-concluida">Ativo</span></td><td><a class="btn-ghost" style="cursor:pointer">Editar</a></td></tr>
+              <tr><td><strong>DEV</strong></td><td>Desenvolvimento de Software</td><td><span class="pill">Operacional</span></td><td>22 controles em 3 normas</td><td><span class="badge badge-concluida">Ativo</span></td><td><a class="btn-ghost" style="cursor:pointer">Editar</a></td></tr>
+              <tr><td><strong>COM</strong></td><td>Compras e Fornecedores</td><td><span class="pill">Operacional</span></td><td>11 controles em 3 normas</td><td><span class="badge badge-concluida">Ativo</span></td><td><a class="btn-ghost" style="cursor:pointer">Editar</a></td></tr>
+              <tr><td><strong>VEN</strong></td><td>Vendas e Atendimento</td><td><span class="pill">Operacional</span></td><td>8 controles em 2 normas</td><td><span class="badge badge-concluida">Ativo</span></td><td><a class="btn-ghost" style="cursor:pointer">Editar</a></td></tr>
+              <tr><td><strong>TI</strong></td><td>Operações de TI &amp; Infra</td><td><span class="pill">Suporte</span></td><td>31 controles em 2 normas</td><td><span class="badge badge-concluida">Ativo</span></td><td><a class="btn-ghost" style="cursor:pointer">Editar</a></td></tr>
+              <tr><td><strong>BAK</strong></td><td>Backup e Recuperação</td><td><span class="pill">Suporte</span></td><td>9 controles em 2 normas</td><td><span class="badge badge-concluida">Ativo</span></td><td><a class="btn-ghost" style="cursor:pointer">Editar</a></td></tr>
+              <tr><td><strong>ACE</strong></td><td>Controles de Acesso</td><td><span class="pill">Suporte</span></td><td>15 controles em 2 normas</td><td><span class="badge badge-concluida">Ativo</span></td><td><a class="btn-ghost" style="cursor:pointer">Editar</a></td></tr>
+              <tr><td><strong>GST</strong></td><td>Governança e Riscos</td><td><span class="pill">Gestão</span></td><td>26 controles em 5 normas</td><td><span class="badge badge-concluida">Ativo</span></td><td><a class="btn-ghost" style="cursor:pointer">Editar</a></td></tr>
+              <tr><td><strong>QUA</strong></td><td>Garantia da Qualidade</td><td><span class="pill">Operacional</span></td><td>18 controles em 2 normas</td><td><span class="badge badge-concluida">Ativo</span></td><td><a class="btn-ghost" style="cursor:pointer">Editar</a></td></tr>
+              <tr><td><strong>FIN</strong></td><td>Financeiro e Contábil</td><td><span class="pill">Suporte</span></td><td>7 controles em 2 normas</td><td><span class="badge badge-concluida">Ativo</span></td><td><a class="btn-ghost" style="cursor:pointer">Editar</a></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- AUDITORIAS -->
+      <section id="view-auditorias" class="view" style="display:none">
+        <div class="topbar">
+          <div><div class="crumb">Operação</div><h2>Auditorias</h2></div>
+          <div class="actions"><button class="btn btn-primary" onclick="openModal('nova-auditoria')">+ Nova Auditoria</button></div>
+        </div>
+        <div class="tabs">
+          <a class="active">Todas</a><a>Planejadas</a><a>Em Execução</a><a>Pendentes Relatório</a><a>Concluídas</a><a>Atrasadas <span class="badge badge-atrasada" style="margin-left:4px">3</span></a>
+        </div>
+        <div class="card">
+          <table>
+            <thead><tr><th>#</th><th>Cliente</th><th>Norma</th><th>Tipo</th><th>Auditor Líder</th><th>Data</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+              <tr style="cursor:pointer" onclick="go('execucao')"><td>#2026-018</td><td>Acme Indústria</td><td>ISO 9001</td><td>Manutenção</td><td><span class="avatar">JS</span> João Silva</td><td>08/06/2026</td><td><span class="badge badge-planejada">Planejada</span></td><td><a class="btn-ghost">Abrir →</a></td></tr>
+              <tr><td>#2026-017</td><td>Beta Tech</td><td>ISO 27001</td><td>Recertificação</td><td><span class="avatar">MA</span> Maria Alves</td><td>10/06/2026</td><td><span class="badge badge-pendente">Plano Pendente</span></td><td><a class="btn-ghost">Abrir →</a></td></tr>
+              <tr><td>#2026-016</td><td>Delta Logística</td><td>ISO 45001</td><td>Manutenção</td><td><span class="avatar">JS</span> João Silva</td><td>15/06/2026</td><td><span class="badge badge-execucao">Em Execução</span></td><td><a class="btn-ghost">Abrir →</a></td></tr>
+              <tr><td>#2026-015</td><td>Omega Ltd</td><td>ISO 27001</td><td>Manutenção</td><td><span class="avatar">CR</span> Carlos Rocha</td><td>15/05/2026</td><td><span class="badge badge-atrasada">Atrasada (3d)</span></td><td><a class="btn-ghost">Abrir →</a></td></tr>
+              <tr><td>#2026-014</td><td>Theta Corp</td><td>ISO 9001</td><td>Manutenção</td><td><span class="avatar">MA</span> Maria Alves</td><td>20/05/2026</td><td><span class="badge badge-concluida">Concluída</span></td><td><a class="btn-ghost">Abrir →</a></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- EXECUÇÃO DA AUDITORIA -->
+      <section id="view-execucao" class="view" style="display:none">
+        <div class="topbar">
+          <div><div class="crumb"><a onclick="go('auditorias')" style="cursor:pointer; color:var(--primary-light)">Auditorias</a> / #2026-018</div><h2>Acme Indústria — ISO 9001:2015</h2></div>
+          <div class="actions">
+            <button class="btn btn-secondary">Salvar Rascunho</button>
+            <button class="btn btn-success" onclick="openModal('gerar-relatorio')">✓ Concluir Auditoria</button>
+          </div>
+        </div>
+
+        <div class="grid grid-4" style="margin-bottom:20px;">
+          <div class="kpi"><div class="label">Itens Totais</div><div class="value">42</div></div>
+          <div class="kpi"><div class="label">Conformes</div><div class="value" style="color:var(--success)">28</div></div>
+          <div class="kpi"><div class="label">Não Conformidades</div><div class="value" style="color:var(--danger)">5</div></div>
+          <div class="kpi"><div class="label">Progresso</div><div class="value">79%</div><div class="progress" style="margin-top:8px"><div style="width:79%"></div></div></div>
+        </div>
+
+        <div class="tabs">
+          <a class="active">Plano de Auditoria</a><a>Checklist (ISO 9001)</a><a>Anexos &amp; Evidências</a><a>Resumo</a>
+        </div>
+
+        <div class="info-banner">
+          📎 <strong>Plano de auditoria carregado:</strong> plano_acme_iso9001_2026.pdf (subido por João Silva em 02/06/2026 às 14h22)
+          <a class="btn-ghost" style="margin-left:auto; cursor:pointer">Substituir</a>
+        </div>
+
+        <!-- FILTRO POR PROCESSO -->
+        <div class="card" style="margin-top:20px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <div>
+              <div style="font-size:12px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Filtro de Processo</div>
+              <div style="font-size:13px; color:var(--text);">Selecione o processo que está auditando agora — o checklist será filtrado automaticamente.</div>
+            </div>
+            <span class="pill">Auditoria configurada para 4 processos</span>
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <label style="display:inline-flex; align-items:center; gap:8px; padding:10px 16px; border:2px solid var(--border); border-radius:8px; cursor:pointer; font-size:13px; font-weight:600;"><input type="radio" name="proc-filter" style="width:auto;">Todos os processos <span class="pill" style="margin-left:4px;">42 itens</span></label>
+            <label style="display:inline-flex; align-items:center; gap:8px; padding:10px 16px; border:2px solid var(--primary); background:rgba(31,58,95,0.06); border-radius:8px; cursor:pointer; font-size:13px; font-weight:700; color:var(--primary);"><input type="radio" name="proc-filter" checked style="width:auto;">👥 Gestão de RH <span class="pill" style="margin-left:4px; background:var(--primary); color:#fff;">8 itens</span></label>
+            <label style="display:inline-flex; align-items:center; gap:8px; padding:10px 16px; border:2px solid var(--border); border-radius:8px; cursor:pointer; font-size:13px; font-weight:600;"><input type="radio" name="proc-filter" style="width:auto;">💻 Desenvolvimento <span class="pill" style="margin-left:4px;">14 itens</span></label>
+            <label style="display:inline-flex; align-items:center; gap:8px; padding:10px 16px; border:2px solid var(--border); border-radius:8px; cursor:pointer; font-size:13px; font-weight:600;"><input type="radio" name="proc-filter" style="width:auto;">🛒 Compras <span class="pill" style="margin-left:4px;">7 itens</span></label>
+            <label style="display:inline-flex; align-items:center; gap:8px; padding:10px 16px; border:2px solid var(--border); border-radius:8px; cursor:pointer; font-size:13px; font-weight:600;"><input type="radio" name="proc-filter" style="width:auto;">⚖️ Governança &amp; Riscos <span class="pill" style="margin-left:4px;">13 itens</span></label>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:20px;">
+          <div class="card-header"><div class="card-title">Checklist — Processo: Gestão de RH</div><span class="pill">5 de 8 itens preenchidos</span></div>
+
+          <div class="checklist-item">
+            <div class="code">7.2 — Competência <span class="pill" style="margin-left:8px; background:rgba(31,58,95,0.1); color:var(--primary);">RH</span></div>
+            <div class="desc">A organização deve determinar a competência necessária das pessoas que executam trabalhos sob seu controle que afetam o desempenho.</div>
+            <label>Evidência observada</label>
+            <textarea>Matriz de competências atualizada, plano anual de treinamento aprovado, registros de avaliação de eficácia presentes.</textarea>
+            <div class="classification" style="margin-top:10px">
+              <label class="selected"><input type="radio" name="c1" checked>✓ Conforme</label>
+              <label><input type="radio" name="c1">NC Maior</label>
+              <label><input type="radio" name="c1">NC Menor</label>
+              <label><input type="radio" name="c1">Observação</label>
+              <label><input type="radio" name="c1">Oportunidade de Melhoria</label>
+            </div>
+          </div>
+
+          <div class="checklist-item">
+            <div class="code">7.3 — Conscientização <span class="pill" style="margin-left:8px; background:rgba(31,58,95,0.1); color:var(--primary);">RH</span></div>
+            <div class="desc">A organização deve assegurar que as pessoas que executam trabalhos sob seu controle estejam conscientes da política, dos objetivos da qualidade e de sua contribuição para a eficácia.</div>
+            <label>Evidência observada</label>
+            <textarea>Treinamento de integração obrigatório, comprovantes de leitura da política. 2 colaboradores admitidos em 04/2026 ainda sem registro de integração.</textarea>
+            <div class="classification" style="margin-top:10px">
+              <label><input type="radio" name="c2">✓ Conforme</label>
+              <label><input type="radio" name="c2">NC Maior</label>
+              <label class="selected" style="border-color:#B8801C; background:#FFF2D6"><input type="radio" name="c2" checked>NC Menor</label>
+              <label><input type="radio" name="c2">Observação</label>
+              <label><input type="radio" name="c2">Oportunidade de Melhoria</label>
+            </div>
+            <label style="margin-top:12px">Recomendação</label>
+            <textarea>Reforçar processo de integração com gate sistêmico no SAP HR antes da liberação para a área.</textarea>
+            <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap">
+              <span class="pill" style="background:#FFF2D6; color:#B8801C">📎 relatorio_integracao.xlsx</span>
+              <a class="btn-ghost" style="font-size:12px; cursor:pointer">+ Anexar</a>
+            </div>
+          </div>
+
+          <div class="checklist-item">
+            <div class="code">7.1.2 — Pessoas <span class="pill" style="margin-left:8px; background:rgba(31,58,95,0.1); color:var(--primary);">RH</span></div>
+            <div class="desc">A organização deve determinar e prover as pessoas necessárias para a operação eficaz do SGQ e para a operação e controle de seus processos.</div>
+            <label>Evidência observada</label>
+            <textarea>Quadro de pessoal aprovado em 01/2026. Headcount realizado 96% do planejado. Plano de sucessão para posições críticas documentado.</textarea>
+            <div class="classification" style="margin-top:10px">
+              <label class="selected"><input type="radio" name="c3" checked>✓ Conforme</label>
+              <label><input type="radio" name="c3">NC Maior</label>
+              <label><input type="radio" name="c3">NC Menor</label>
+              <label><input type="radio" name="c3">Observação</label>
+              <label><input type="radio" name="c3">Oportunidade de Melhoria</label>
+            </div>
+          </div>
+
+          <div style="text-align:center; margin-top:16px;">
+            <button class="btn btn-secondary">Carregar próximos 5 itens de RH</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- CRONOGRAMA -->
+      <section id="view-cronograma" class="view" style="display:none">
+        <div class="topbar"><div><div class="crumb">Operação</div><h2>Cronograma Anual</h2></div></div>
+        <div class="card">
+          <div style="overflow-x:auto;">
+            <table style="min-width:1000px">
+              <thead><tr><th>Cliente</th><th>Jan</th><th>Fev</th><th>Mar</th><th>Abr</th><th>Mai</th><th>Jun</th><th>Jul</th><th>Ago</th><th>Set</th><th>Out</th><th>Nov</th><th>Dez</th></tr></thead>
+              <tbody>
+                <tr><td>Acme Indústria</td><td></td><td></td><td><span class="badge badge-concluida">9001</span></td><td></td><td></td><td><span class="badge badge-planejada">9001</span></td><td></td><td></td><td><span class="badge badge-planejada">14001</span></td><td></td><td></td><td><span class="badge badge-planejada">45001</span></td></tr>
+                <tr><td>Beta Tech</td><td></td><td></td><td><span class="badge badge-concluida">27001</span></td><td></td><td></td><td><span class="badge badge-pendente">27001</span></td><td></td><td></td><td><span class="badge badge-planejada">27001</span></td><td></td><td></td><td><span class="badge badge-planejada">22301</span></td></tr>
+                <tr><td>Gamma Saúde</td><td></td><td><span class="badge badge-concluida">13485</span></td><td></td><td></td><td></td><td><span class="badge badge-planejada">13485</span></td><td></td><td></td><td></td><td><span class="badge badge-planejada">9001</span></td><td></td><td></td></tr>
+                <tr><td>Delta Logística</td><td></td><td></td><td></td><td></td><td></td><td><span class="badge badge-execucao">45001</span></td><td></td><td></td><td></td><td><span class="badge badge-planejada">14001</span></td><td></td><td></td></tr>
+                <tr><td>Omega Ltd</td><td></td><td></td><td></td><td></td><td><span class="badge badge-atrasada">27001</span></td><td></td><td></td><td></td><td></td><td></td><td><span class="badge badge-planejada">37001</span></td><td></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- PAGAMENTOS -->
+      <section id="view-pagamentos" class="view" style="display:none">
+        <div class="topbar">
+          <div><div class="crumb">Financeiro</div><h2>Pagamentos</h2></div>
+          <div class="actions" data-roles="auditor"><button class="btn btn-primary" onclick="openModal('nova-nf')">+ Solicitar Pagamento</button></div>
+        </div>
+        <div class="grid grid-4" style="margin-bottom:20px;">
+          <div class="kpi"><div class="label">A Pagar</div><div class="value">R$ 42.500</div></div>
+          <div class="kpi"><div class="label">Em Processamento</div><div class="value">R$ 18.200</div></div>
+          <div class="kpi"><div class="label">Pago em Junho</div><div class="value">R$ 67.800</div></div>
+          <div class="kpi"><div class="label">NFs Aguardando</div><div class="value">7</div></div>
+        </div>
+        <div class="card">
+          <table>
+            <thead><tr><th>ID</th><th>Auditor</th><th>Auditoria</th><th>NF</th><th>Valor</th><th>Status</th><th>Solicitada</th><th></th></tr></thead>
+            <tbody>
+              <tr><td>PAG-2026-031</td><td>Maria Alves</td><td>Theta Corp - ISO 9001</td><td>📎 NF-2841.pdf</td><td>R$ 4.800</td><td><span class="badge badge-pendente">Recebida</span></td><td>02/06/2026</td><td><a class="btn-ghost">Processar</a></td></tr>
+              <tr><td>PAG-2026-030</td><td>João Silva</td><td>Sigma Co - ISO 9001</td><td>📎 NF-0312.pdf</td><td>R$ 6.200</td><td><span class="badge badge-execucao">Em Processamento</span></td><td>30/05/2026</td><td><a class="btn-ghost">Pagar</a></td></tr>
+              <tr><td>PAG-2026-029</td><td>Carlos Rocha</td><td>Epsilon AG - ISO 27001</td><td>📎 NF-1198.pdf</td><td>R$ 8.500</td><td><span class="badge badge-concluida">Paga</span></td><td>25/05/2026</td><td><a class="btn-ghost">Ver</a></td></tr>
+              <tr><td>PAG-2026-028</td><td>Renata Costa</td><td>Zeta SA - ISO 14001</td><td>📎 NF-7766.pdf</td><td>R$ 5.400</td><td><span class="badge badge-concluida">Paga</span></td><td>22/05/2026</td><td><a class="btn-ghost">Ver</a></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- NOTIFICAÇÕES -->
+      <section id="view-notificacoes" class="view" style="display:none">
+        <div class="topbar"><div><div class="crumb">Sistema</div><h2>Notificações</h2></div><div class="actions"><button class="btn btn-secondary">Marcar todas como lidas</button></div></div>
+        <div class="card">
+          <div class="notification"><div class="dot warning"></div><div class="content"><div class="title">Lembrete: plano de auditoria — Acme Indústria (ISO 9001)</div><div class="desc">Sua auditoria na Acme Indústria acontece em 30 dias. Faça o upload do plano até 18/06.</div><div class="time">há 2 horas</div></div></div>
+          <div class="notification"><div class="dot success"></div><div class="content"><div class="title">Plano enviado por João Silva</div><div class="desc">Auditoria #2026-018 — Acme Indústria. Revisão pendente do administrador.</div><div class="time">há 5 horas</div></div></div>
+          <div class="notification"><div class="dot info"></div><div class="content"><div class="title">Nova solicitação de pagamento</div><div class="desc">Maria Alves solicitou R$ 4.800 para a auditoria Theta Corp.</div><div class="time">ontem</div></div></div>
+          <div class="notification"><div class="dot danger"></div><div class="content"><div class="title">Relatório atrasado — Omega Ltd</div><div class="desc">Auditoria concluída há 18 dias. Relatório não foi entregue.</div><div class="time">ontem</div></div></div>
+          <div class="notification"><div class="dot warning"></div><div class="content"><div class="title">Certificado a vencer: Carlos Rocha — IRCA ISO 27001</div><div class="desc">Vence em 45 dias (18/07/2026). Providenciar renovação.</div><div class="time">há 2 dias</div></div></div>
+          <div class="notification"><div class="dot success"></div><div class="content"><div class="title">Auditoria concluída — Theta Corp</div><div class="desc">Maria Alves concluiu a auditoria. Relatório disponível para aprovação.</div><div class="time">há 3 dias</div></div></div>
+          <div class="notification"><div class="dot info"></div><div class="content"><div class="title">Você foi alocado em uma nova auditoria</div><div class="desc">Beta Tech — ISO 27001 — 10/06/2026.</div><div class="time">há 5 dias</div></div></div>
+        </div>
+      </section>
+
+      <!-- CONFIGURAÇÕES -->
+      <section id="view-configuracoes" class="view" style="display:none">
+        <div class="topbar"><div><div class="crumb">Sistema</div><h2>Configurações</h2></div></div>
+        <div class="tabs">
+          <a class="active">Geral</a><a>SSO &amp; Acesso</a><a>Templates de Norma</a><a>Notificações</a><a>Templates de Relatório</a><a>Trilha de Auditoria</a>
+        </div>
+        <div class="card">
+          <h3 style="margin-bottom:16px">Configurações Gerais</h3>
+          <div class="form-row">
+            <div><label>Nome da Empresa</label><input value="Dédalo Auditoria e Consultoria Ltda"></div>
+            <div><label>CNPJ</label><input value="00.000.000/0001-00"></div>
+          </div>
+          <div class="form-row">
+            <div><label>Prazo para envio de relatório (dias)</label><input value="15" type="number"></div>
+            <div><label>Antecedência - lembrete plano (dias)</label><input value="30" type="number"></div>
+          </div>
+          <div class="form-row">
+            <div><label>Antecedência - lembrete auditoria (dias)</label><input value="15, 3"></div>
+            <div><label>Alerta certificado a vencer (dias)</label><input value="60, 30, 7"></div>
+          </div>
+          <div class="form-row full">
+            <div><label>Provedores SSO autorizados</label>
+            <div style="display:flex; gap:8px;"><span class="pill" style="background:#E3EEFA; color:#1F5897">✓ Google Workspace (dedalo.com.br)</span><span class="pill" style="background:#E3EEFA; color:#1F5897">✓ Microsoft Entra (dedalo.onmicrosoft.com)</span></div>
+            </div>
+          </div>
+          <button class="btn btn-primary">Salvar</button>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+
+<!-- MODALS -->
+<div class="modal-overlay" id="modal-novo-auditor">
+  <div class="modal">
+    <h3>Cadastrar Novo Auditor</h3>
+    <div class="form-row">
+      <div><label>Nome Completo *</label><input placeholder="Ex: João da Silva"></div>
+      <div><label>CPF *</label><input placeholder="000.000.000-00"></div>
+    </div>
+    <div class="form-row">
+      <div><label>E-mail corporativo (SSO) *</label><input placeholder="joao@dedalo.com.br"></div>
+      <div><label>Telefone</label><input placeholder="(11) 98765-4321"></div>
+    </div>
+    <div class="form-row">
+      <div><label>CNPJ (se PJ)</label><input placeholder="00.000.000/0001-00"></div>
+      <div><label>Tarifa-base (R$/dia)</label><input type="number" placeholder="1500"></div>
+    </div>
+    <div class="form-row full">
+      <div><label>Normas que atende *</label>
+        <div style="display:flex; flex-wrap:wrap; gap:6px;">
+          <label style="display:inline-flex; gap:6px; padding:6px 12px; border:1px solid var(--border); border-radius:6px; cursor:pointer; font-size:12px; text-transform:none; letter-spacing:0; font-weight:500;"><input type="checkbox" checked> ISO 9001</label>
+          <label style="display:inline-flex; gap:6px; padding:6px 12px; border:1px solid var(--border); border-radius:6px; cursor:pointer; font-size:12px; text-transform:none; letter-spacing:0; font-weight:500;"><input type="checkbox"> ISO 27001</label>
+          <label style="display:inline-flex; gap:6px; padding:6px 12px; border:1px solid var(--border); border-radius:6px; cursor:pointer; font-size:12px; text-transform:none; letter-spacing:0; font-weight:500;"><input type="checkbox" checked> ISO 14001</label>
+          <label style="display:inline-flex; gap:6px; padding:6px 12px; border:1px solid var(--border); border-radius:6px; cursor:pointer; font-size:12px; text-transform:none; letter-spacing:0; font-weight:500;"><input type="checkbox"> ISO 45001</label>
+          <label style="display:inline-flex; gap:6px; padding:6px 12px; border:1px solid var(--border); border-radius:6px; cursor:pointer; font-size:12px; text-transform:none; letter-spacing:0; font-weight:500;"><input type="checkbox"> ISO 37001</label>
+          <label style="display:inline-flex; gap:6px; padding:6px 12px; border:1px solid var(--border); border-radius:6px; cursor:pointer; font-size:12px; text-transform:none; letter-spacing:0; font-weight:500;"><input type="checkbox"> ISO 13485</label>
+        </div>
+      </div>
+    </div>
+    <div class="form-row full">
+      <div><label>Certificados / Diplomas</label>
+        <div style="border:2px dashed var(--border); border-radius:8px; padding:24px; text-align:center; color:var(--text-muted);">📎 Arraste arquivos aqui ou <a class="btn-ghost" style="cursor:pointer">clique para selecionar</a><br><small>PDF, JPG ou PNG. Adicione tipo, emissão e validade para cada certificado.</small></div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="closeModal()">Salvar Auditor</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-nova-auditoria">
+  <div class="modal">
+    <h3>Nova Auditoria</h3>
+    <div class="form-row">
+      <div><label>Cliente *</label><select><option>Acme Indústria S.A.</option><option>Beta Tech Ltda.</option><option>Gamma Saúde Hospital</option></select></div>
+      <div><label>Norma *</label><select><option>ISO 9001:2015</option><option>ISO 27001:2022</option><option>ISO 14001:2015</option></select></div>
+    </div>
+    <div class="form-row">
+      <div><label>Tipo *</label><select><option>Manutenção</option><option>Inicial</option><option>Recertificação</option><option>Acompanhamento</option></select></div>
+      <div><label>Data Planejada *</label><input type="date" value="2026-07-15"></div>
+    </div>
+    <div class="form-row">
+      <div><label>Auditor Líder *</label><select><option>João Silva (ISO 9001, 14001)</option><option>Paulo Ferreira (ISO 9001, 45001, 37001)</option></select></div>
+      <div><label>Duração estimada (dias)</label><input type="number" value="2"></div>
+    </div>
+    <div class="form-row full"><div><label>Escopo</label><textarea placeholder="Unidades e áreas a serem auditadas..."></textarea></div></div>
+    <div class="form-row full">
+      <div><label>Processos a Auditar (filtro do checklist)</label>
+        <div style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">Selecione um ou mais processos. O auditor verá no checklist apenas os controles vinculados. Deixe vazio para incluir todos.</div>
+        <div style="display:flex; flex-wrap:wrap; gap:6px;">
+          <label style="display:inline-flex; gap:6px; padding:6px 12px; border:1px solid var(--border); border-radius:6px; cursor:pointer; font-size:12px; text-transform:none; letter-spacing:0; font-weight:500;"><input type="checkbox" checked> 👥 Gestão de RH</label>
+          <label style="display:inline-flex; gap:6px; padding:6px 12px; border:1px solid var(--border); border-radius:6px; cursor:pointer; font-size:12px; text-transform:none; letter-spacing:0; font-weight:500;"><input type="checkbox" checked> 💻 Desenvolvimento</label>
+          <label style="display:inline-flex; gap:6px; padding:6px 12px; border:1px solid var(--border); border-radius:6px; cursor:pointer; font-size:12px; text-transform:none; letter-spacing:0; font-weight:500;"><input type="checkbox" checked> 🛒 Compras</label>
+          <label style="display:inline-flex; gap:6px; padding:6px 12px; border:1px solid var(--border); border-radius:6px; cursor:pointer; font-size:12px; text-transform:none; letter-spacing:0; font-weight:500;"><input type="checkbox" checked> ⚖️ Governança</label>
+          <label style="display:inline-flex; gap:6px; padding:6px 12px; border:1px solid var(--border); border-radius:6px; cursor:pointer; font-size:12px; text-transform:none; letter-spacing:0; font-weight:500;"><input type="checkbox"> 🛡️ Acessos</label>
+        </div>
+      </div>
+    </div>
+    <div class="info-banner" style="margin:0;">⚠️ <strong>Imparcialidade:</strong> João Silva já realizou 2 auditorias consecutivas neste cliente (ISO 19011 §5.2).</div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="closeModal()">Criar e Notificar Auditor</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-novo-cliente">
+  <div class="modal">
+    <h3>Cadastrar Novo Cliente</h3>
+    <div class="form-row">
+      <div><label>Razão Social *</label><input></div>
+      <div><label>CNPJ *</label><input placeholder="00.000.000/0001-00"></div>
+    </div>
+    <div class="form-row">
+      <div><label>Setor</label><select><option>Indústria</option><option>Tecnologia</option><option>Saúde</option></select></div>
+      <div><label>Nº Colaboradores</label><input type="number"></div>
+    </div>
+    <div class="form-row">
+      <div><label>Periodicidade *</label><select><option>Anual</option><option>Semestral</option></select></div>
+      <div><label>Início do Contrato</label><input type="date"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="closeModal()">Salvar Cliente</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-novo-processo">
+  <div class="modal">
+    <h3>Cadastrar Novo Processo</h3>
+    <div class="form-row">
+      <div><label>Código *</label><input placeholder="Ex: RH"></div>
+      <div><label>Categoria *</label><select><option>Operacional</option><option>Suporte</option><option>Gestão</option></select></div>
+    </div>
+    <div class="form-row full"><div><label>Nome do Processo *</label><input placeholder="Ex: Gestão de Recursos Humanos"></div></div>
+    <div class="form-row full"><div><label>Descrição</label><textarea placeholder="Descreva o processo, suas atividades principais..."></textarea></div></div>
+    <div class="info-banner" style="margin:0;">💡 Após cadastrado, este processo poderá ser vinculado a controles de qualquer norma. O auditor poderá filtrar a execução por este processo em campo.</div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="closeModal()">Salvar Processo</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-nova-norma">
+  <div class="modal">
+    <h3>Cadastrar Nova Norma / Framework</h3>
+    <div class="form-row">
+      <div><label>Código *</label><input placeholder="Ex: ISO 9001:2015"></div>
+      <div><label>Versão</label><input placeholder="2015"></div>
+    </div>
+    <div class="form-row full"><div><label>Nome *</label><input placeholder="Sistemas de Gestão da Qualidade"></div></div>
+    <div class="form-row">
+      <div><label>Família</label><select><option>Qualidade</option><option>Segurança</option><option>Meio Ambiente</option><option>Saúde</option><option>Privacidade</option></select></div>
+      <div><label>Status</label><select><option>Ativa</option><option>Em Revisão</option></select></div>
+    </div>
+    <div class="info-banner" style="margin:0;">💡 Após criar a norma, você poderá adicionar os controles/requisitos hierarquicamente e vincular cada um a um ou mais processos.</div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="closeModal()">Salvar Norma</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-gerar-relatorio">
+  <div class="modal">
+    <h3>Concluir Auditoria — Gerar Relatório</h3>
+    <p style="color:var(--text-muted); margin-bottom:16px;">O sistema irá gerar o relatório a partir das constatações registradas no checklist (todos os processos).</p>
+    <div class="form-row">
+      <div><label>Template</label><select><option>Padrão Dédalo - ISO 9001</option><option>Resumido</option></select></div>
+      <div><label>Formato</label><select><option>DOCX + PDF</option><option>Somente PDF</option></select></div>
+    </div>
+    <div class="form-row full">
+      <div><label>Comentário ao administrador</label><textarea placeholder="Observações que ajudem o revisor (opcional)"></textarea></div>
+    </div>
+    <div class="info-banner" style="margin:0; background:#D9F1E5; color:#1E6D45; border-color:var(--success);">
+      ✓ <strong>Pronto:</strong> 42 itens (4 processos). 5 não conformidades. Admin será notificado para revisar e aprovar.
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-success" onclick="closeModal()">Gerar Relatório DOCX + PDF</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-nova-nf">
+  <div class="modal">
+    <h3>Solicitar Pagamento</h3>
+    <div class="form-row">
+      <div><label>Auditoria *</label><select><option>#2026-014 - Theta Corp (ISO 9001)</option></select></div>
+      <div><label>Valor (R$) *</label><input type="number" placeholder="0,00"></div>
+    </div>
+    <div class="form-row full">
+      <div><label>Nota Fiscal (PDF) *</label>
+        <div style="border:2px dashed var(--border); border-radius:8px; padding:20px; text-align:center; color:var(--text-muted);">📎 Anexar NF em PDF<br><small>Dados bancários auto-preenchidos do seu cadastro</small></div>
+      </div>
+    </div>
+    <div class="form-row full"><div><label>Descrição</label><textarea placeholder="Honorários de auditoria - 2 dias..."></textarea></div></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="closeModal()">Enviar ao Financeiro</button>
+    </div>
+  </div>
+</div>
+
+<div class="proto-banner">PROTÓTIPO • Clique nos botões para navegar</div>
+
+<script>
+  let currentRole = 'admin';
+
+  function login(role) {
+    currentRole = role;
+    document.getElementById('page-login').classList.remove('active');
+    document.getElementById('page-app').classList.add('active');
+
+    const userMap = {
+      admin: { name: 'Marcos Gomes', role: 'Administrador', console: 'Console Administrativa' },
+      auditor: { name: 'João Silva', role: 'Auditor', console: 'Console do Auditor' },
+      financeiro: { name: 'Ana Pereira', role: 'Financeiro', console: 'Console Financeiro' },
+    };
+    document.getElementById('user-name').textContent = userMap[role].name;
+    document.getElementById('user-role').textContent = userMap[role].role;
+    document.getElementById('console-badge').textContent = userMap[role].console;
+
+    document.querySelectorAll('[data-roles]').forEach(el => {
+      const roles = el.getAttribute('data-roles').split(',');
+      el.style.display = roles.includes(role) ? '' : 'none';
+    });
+
+    document.querySelectorAll('button').forEach(b => {
+      if (b.textContent.includes('+ Nova Auditoria') || b.textContent.includes('+ Novo Auditor') ||
+          b.textContent.includes('+ Novo Cliente') || b.textContent.includes('+ Nova Norma') ||
+          b.textContent.includes('+ Novo Processo')) {
+        b.style.display = role === 'admin' ? '' : 'none';
+      }
+    });
+
+    go(role === 'auditor' ? 'auditorias' : 'dashboard');
+  }
+
+  function logout() {
+    document.getElementById('page-app').classList.remove('active');
+    document.getElementById('page-login').classList.add('active');
+  }
+
+  function go(page) {
+    document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
+    const target = document.getElementById('view-' + page);
+    if (target) target.style.display = 'block';
+
+    document.querySelectorAll('.sidebar nav a').forEach(a => a.classList.remove('active'));
+    const navLink = document.querySelector(`.sidebar nav a[data-page="${page}"]`);
+    if (navLink) navLink.classList.add('active');
+
+    window.scrollTo(0, 0);
+  }
+
+  function openModal(name) {
+    document.getElementById('modal-' + name).classList.add('show');
+  }
+  function closeModal() {
+    document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('show'));
+  }
+  document.querySelectorAll('.modal-overlay').forEach(o => {
+    o.addEventListener('click', (e) => { if (e.target === o) closeModal(); });
+  });
+
+  document.querySelectorAll('.classification').forEach(group => {
+    group.addEventListener('change', () => {
+      group.querySelectorAll('label').forEach(l => l.classList.remove('selected'));
+      const sel = group.querySelector('input:checked');
+      if (sel) sel.parentElement.classList.add('selected');
+    });
+  });
+</script>
+</body>
+</html>

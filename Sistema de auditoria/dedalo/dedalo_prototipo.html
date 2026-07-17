@@ -38,7 +38,7 @@
   .sidebar nav a {
     display: flex; align-items: center; gap: 12px; padding: 11px 24px;
     color: rgba(255,255,255,0.75); text-decoration: none; font-size: 14px;
-    border-left: 3px solid transparent; transition: all 0.15s;
+    border-left: 3px solid transparent; transition: background-color 0.15s, color 0.15s, border-color 0.15s;
   }
   .sidebar nav a:hover { background: rgba(255,255,255,0.05); color: #fff; }
   .sidebar nav a.active { background: rgba(255,255,255,0.08); color: #fff; border-left-color: var(--accent); }
@@ -58,7 +58,8 @@
 
   /* COMPONENTS */
   .btn { display: inline-flex; align-items: center; gap: 8px; padding: 9px 16px; border-radius: 6px;
-         font-weight: 600; font-size: 13px; cursor: pointer; border: none; transition: all 0.15s;
+         font-weight: 600; font-size: 13px; cursor: pointer; border: none;
+         transition: background-color 0.15s, color 0.15s, border-color 0.15s;
          text-decoration: none; }
   .btn-primary { background: var(--primary); color: #fff; }
   .btn-primary:hover { background: var(--primary-light); }
@@ -68,7 +69,7 @@
   .btn-success { background: var(--success); color: #fff; }
   .btn-danger { background: var(--danger); color: #fff; }
   .btn-sm { padding: 6px 12px; font-size: 12px; }
-  .btn-ghost { background: transparent; color: var(--primary-light); }
+  .btn-ghost { background: transparent; color: var(--primary-light); cursor: pointer; }
 
   .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 20px; }
   .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
@@ -120,7 +121,7 @@
   .login-card .subtitle { text-align: center; color: var(--text-muted); font-size: 14px; margin-bottom: 32px; }
   .sso-btn { width: 100%; padding: 13px; background: #fff; border: 2px solid var(--border); border-radius: 8px;
              display: flex; align-items: center; justify-content: center; gap: 12px; cursor: pointer; font-weight: 600;
-             margin-bottom: 12px; font-size: 14px; transition: all 0.15s; }
+             margin-bottom: 12px; font-size: 14px; transition: background-color 0.15s, border-color 0.15s; }
   .sso-btn:hover { border-color: var(--primary-light); background: var(--bg); }
   .sso-btn svg { width: 22px; height: 22px; }
   .login-footer { text-align: center; font-size: 12px; color: var(--text-muted); margin-top: 24px; }
@@ -153,6 +154,11 @@
   .page { display: none; }
   .page.active { display: block; }
 
+  /* ROLE VISIBILITY (set via #page-app[data-role]) */
+  #page-app[data-role="admin"] [data-roles]:not([data-roles="admin"]) { display: none; }
+  #page-app[data-role="auditor"] [data-roles]:not([data-roles="auditor"]) { display: none; }
+  #page-app[data-role="financeiro"] [data-roles] { display: none; }
+
   /* INFO BANNER */
   .info-banner { background: #FFF8E6; border: 1px solid var(--accent); border-radius: 8px; padding: 12px 16px;
                  margin-bottom: 20px; font-size: 13px; color: #735417; display: flex; align-items: center; gap: 10px; }
@@ -179,6 +185,13 @@
   .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px; }
 
   .pill { display: inline-block; padding: 2px 8px; background: var(--bg); border-radius: 4px; font-size: 11px; color: var(--text-muted); margin-right: 4px; }
+  .pill-info { background: #E3EEFA; color: #1F5897; }
+
+  .chip-check { display: inline-flex; gap: 6px; padding: 6px 12px; border: 1px solid var(--border);
+                border-radius: 6px; cursor: pointer; font-size: 12px; text-transform: none;
+                letter-spacing: 0; font-weight: 500; }
+
+  .filter-bar { display: flex; gap: 12px; margin-bottom: 16px; }
 </style>
 </head>
 <body>
@@ -255,7 +268,7 @@
           </div>
           <div class="actions">
             <button class="btn btn-secondary" onclick="go('cronograma')">Ver Cronograma</button>
-            <button class="btn btn-primary" onclick="openModal('nova-auditoria')">+ Nova Auditoria</button>
+            <button class="btn btn-primary" data-roles="admin" onclick="openModal('nova-auditoria')">+ Nova Auditoria</button>
           </div>
         </div>
 
@@ -272,7 +285,7 @@
 
         <div class="grid grid-2" style="margin-bottom: 24px;">
           <div class="card">
-            <div class="card-header"><div class="card-title">Próximas Auditorias</div><a class="btn-ghost" onclick="go('auditorias')" style="cursor:pointer">Ver todas →</a></div>
+            <div class="card-header"><div class="card-title">Próximas Auditorias</div><a class="btn-ghost" onclick="go('auditorias')">Ver todas →</a></div>
             <table>
               <thead><tr><th>Cliente</th><th>Norma</th><th>Auditor</th><th>Data</th><th>Status</th></tr></thead>
               <tbody>
@@ -314,11 +327,11 @@
           <div><div class="crumb">Cadastros</div><h2>Auditores</h2></div>
           <div class="actions">
             <button class="btn btn-secondary">Exportar</button>
-            <button class="btn btn-primary" onclick="openModal('novo-auditor')">+ Novo Auditor</button>
+            <button class="btn btn-primary" data-roles="admin" onclick="openModal('novo-auditor')">+ Novo Auditor</button>
           </div>
         </div>
         <div class="card">
-          <div style="display:flex; gap:12px; margin-bottom:16px;">
+          <div class="filter-bar">
             <input type="text" placeholder="Buscar por nome, CPF ou e-mail..." style="flex:1">
             <select style="width:200px"><option>Todas as normas</option><option>ISO 9001</option><option>ISO 27001</option><option>ISO 14001</option></select>
             <select style="width:160px"><option>Status: Todos</option><option>Ativos</option><option>Inativos</option></select>
@@ -326,12 +339,12 @@
           <table>
             <thead><tr><th>Nome</th><th>E-mail</th><th>Normas</th><th>Certificados</th><th>Ocupação</th><th>Status</th><th></th></tr></thead>
             <tbody>
-              <tr><td><span class="avatar">JS</span> João Silva</td><td>joao@dedalo.com.br</td><td><span class="pill">ISO 9001</span><span class="pill">ISO 14001</span></td><td>3 vigentes</td><td>85%</td><td><span class="badge badge-concluida">Ativo</span></td><td><a class="btn-ghost" style="cursor:pointer">Editar</a></td></tr>
-              <tr><td><span class="avatar">MA</span> Maria Alves</td><td>maria@dedalo.com.br</td><td><span class="pill">ISO 27001</span><span class="pill">ISO 22301</span></td><td>4 vigentes</td><td>62%</td><td><span class="badge badge-concluida">Ativo</span></td><td><a class="btn-ghost" style="cursor:pointer">Editar</a></td></tr>
-              <tr><td><span class="avatar">CR</span> Carlos Rocha</td><td>carlos@dedalo.com.br</td><td><span class="pill">ISO 27001</span><span class="pill">ISO 13485</span></td><td>2 vigentes, <span style="color:var(--warning)">1 vence em 45d</span></td><td>78%</td><td><span class="badge badge-concluida">Ativo</span></td><td><a class="btn-ghost" style="cursor:pointer">Editar</a></td></tr>
-              <tr><td><span class="avatar">RC</span> Renata Costa</td><td>renata@dedalo.com.br</td><td><span class="pill">ISO 14001</span><span class="pill">ISO 45001</span></td><td>3 vigentes</td><td>45%</td><td><span class="badge badge-concluida">Ativo</span></td><td><a class="btn-ghost" style="cursor:pointer">Editar</a></td></tr>
-              <tr><td><span class="avatar">PF</span> Paulo Ferreira</td><td>paulo@dedalo.com.br</td><td><span class="pill">ISO 9001</span><span class="pill">ISO 45001</span><span class="pill">ISO 37001</span></td><td>5 vigentes</td><td>92%</td><td><span class="badge badge-concluida">Ativo</span></td><td><a class="btn-ghost" style="cursor:pointer">Editar</a></td></tr>
-              <tr><td><span class="avatar">LM</span> Luiza Mendes</td><td>luiza@dedalo.com.br</td><td><span class="pill">ISO 9001</span></td><td>1 vigente</td><td>30%</td><td><span class="badge badge-concluida">Ativo</span></td><td><a class="btn-ghost" style="cursor:pointer">Editar</a></td></tr>
+              <tr><td><span class="avatar">JS</span> João Silva</td><td>joao@dedalo.com.br</td><td><span class="pill">ISO 9001</span><span class="pill">ISO 14001</span></td><td>3 vigentes</td><td>85%</td><td><span class="badge badge-concluida">Ativo</span></td><td><a class="btn-ghost">Editar</a></td></tr>
+              <tr><td><span class="avatar">MA</span> Maria Alves</td><td>maria@dedalo.com.br</td><td><span class="pill">ISO 27001</span><span class="pill">ISO 22301</span></td><td>4 vigentes</td><td>62%</td><td><span class="badge badge-concluida">Ativo</span></td><td><a class="btn-ghost">Editar</a></td></tr>
+              <tr><td><span class="avatar">CR</span> Carlos Rocha</td><td>carlos@dedalo.com.br</td><td><span class="pill">ISO 27001</span><span class="pill">ISO 13485</span></td><td>2 vigentes, <span style="color:var(--warning)">1 vence em 45d</span></td><td>78%</td><td><span class="badge badge-concluida">Ativo</span></td><td><a class="btn-ghost">Editar</a></td></tr>
+              <tr><td><span class="avatar">RC</span> Renata Costa</td><td>renata@dedalo.com.br</td><td><span class="pill">ISO 14001</span><span class="pill">ISO 45001</span></td><td>3 vigentes</td><td>45%</td><td><span class="badge badge-concluida">Ativo</span></td><td><a class="btn-ghost">Editar</a></td></tr>
+              <tr><td><span class="avatar">PF</span> Paulo Ferreira</td><td>paulo@dedalo.com.br</td><td><span class="pill">ISO 9001</span><span class="pill">ISO 45001</span><span class="pill">ISO 37001</span></td><td>5 vigentes</td><td>92%</td><td><span class="badge badge-concluida">Ativo</span></td><td><a class="btn-ghost">Editar</a></td></tr>
+              <tr><td><span class="avatar">LM</span> Luiza Mendes</td><td>luiza@dedalo.com.br</td><td><span class="pill">ISO 9001</span></td><td>1 vigente</td><td>30%</td><td><span class="badge badge-concluida">Ativo</span></td><td><a class="btn-ghost">Editar</a></td></tr>
             </tbody>
           </table>
         </div>
@@ -341,10 +354,10 @@
       <section id="view-clientes" class="view" style="display:none">
         <div class="topbar">
           <div><div class="crumb">Cadastros</div><h2>Clientes</h2></div>
-          <div class="actions"><button class="btn btn-primary" onclick="openModal('novo-cliente')">+ Novo Cliente</button></div>
+          <div class="actions"><button class="btn btn-primary" data-roles="admin" onclick="openModal('novo-cliente')">+ Novo Cliente</button></div>
         </div>
         <div class="card">
-          <div style="display:flex; gap:12px; margin-bottom:16px;">
+          <div class="filter-bar">
             <input type="text" placeholder="Buscar por razão social ou CNPJ..." style="flex:1">
             <select style="width:200px"><option>Todas as normas</option></select>
             <select style="width:160px"><option>Periodicidade</option><option>Anual</option><option>Semestral</option></select>
@@ -352,11 +365,11 @@
           <table>
             <thead><tr><th>Cliente</th><th>CNPJ</th><th>Normas Contratadas</th><th>Periodicidade</th><th>Contrato</th><th></th></tr></thead>
             <tbody>
-              <tr><td><strong>Acme Indústria S.A.</strong><br><span style="color:var(--text-muted); font-size:12px">Indústria • 1.200 colaboradores</span></td><td>12.345.678/0001-90</td><td><span class="pill">ISO 9001</span><span class="pill">ISO 14001</span><span class="pill">ISO 45001</span></td><td>Anual</td><td>Até 03/2027</td><td><a class="btn-ghost" style="cursor:pointer">Detalhes</a></td></tr>
-              <tr><td><strong>Beta Tech Ltda.</strong><br><span style="color:var(--text-muted); font-size:12px">Tecnologia • 180 colaboradores</span></td><td>23.456.789/0001-12</td><td><span class="pill">ISO 27001</span><span class="pill">ISO 22301</span></td><td>Semestral</td><td>Até 12/2026 <span style="color:var(--warning)">⚠ 6 meses</span></td><td><a class="btn-ghost" style="cursor:pointer">Detalhes</a></td></tr>
-              <tr><td><strong>Gamma Saúde Hospital</strong><br><span style="color:var(--text-muted); font-size:12px">Saúde • 850 colaboradores</span></td><td>34.567.890/0001-23</td><td><span class="pill">ISO 13485</span><span class="pill">ISO 9001</span></td><td>Anual</td><td>Até 08/2027</td><td><a class="btn-ghost" style="cursor:pointer">Detalhes</a></td></tr>
-              <tr><td><strong>Delta Logística</strong><br><span style="color:var(--text-muted); font-size:12px">Logística • 420 colaboradores</span></td><td>45.678.901/0001-34</td><td><span class="pill">ISO 45001</span><span class="pill">ISO 14001</span></td><td>Anual</td><td>Até 11/2026</td><td><a class="btn-ghost" style="cursor:pointer">Detalhes</a></td></tr>
-              <tr><td><strong>Omega Ltd</strong><br><span style="color:var(--text-muted); font-size:12px">Financeiro • 95 colaboradores</span></td><td>56.789.012/0001-45</td><td><span class="pill">ISO 27001</span><span class="pill">ISO 37001</span></td><td>Anual</td><td>Até 02/2028</td><td><a class="btn-ghost" style="cursor:pointer">Detalhes</a></td></tr>
+              <tr><td><strong>Acme Indústria S.A.</strong><br><span style="color:var(--text-muted); font-size:12px">Indústria • 1.200 colaboradores</span></td><td>12.345.678/0001-90</td><td><span class="pill">ISO 9001</span><span class="pill">ISO 14001</span><span class="pill">ISO 45001</span></td><td>Anual</td><td>Até 03/2027</td><td><a class="btn-ghost">Detalhes</a></td></tr>
+              <tr><td><strong>Beta Tech Ltda.</strong><br><span style="color:var(--text-muted); font-size:12px">Tecnologia • 180 colaboradores</span></td><td>23.456.789/0001-12</td><td><span class="pill">ISO 27001</span><span class="pill">ISO 22301</span></td><td>Semestral</td><td>Até 12/2026 <span style="color:var(--warning)">⚠ 6 meses</span></td><td><a class="btn-ghost">Detalhes</a></td></tr>
+              <tr><td><strong>Gamma Saúde Hospital</strong><br><span style="color:var(--text-muted); font-size:12px">Saúde • 850 colaboradores</span></td><td>34.567.890/0001-23</td><td><span class="pill">ISO 13485</span><span class="pill">ISO 9001</span></td><td>Anual</td><td>Até 08/2027</td><td><a class="btn-ghost">Detalhes</a></td></tr>
+              <tr><td><strong>Delta Logística</strong><br><span style="color:var(--text-muted); font-size:12px">Logística • 420 colaboradores</span></td><td>45.678.901/0001-34</td><td><span class="pill">ISO 45001</span><span class="pill">ISO 14001</span></td><td>Anual</td><td>Até 11/2026</td><td><a class="btn-ghost">Detalhes</a></td></tr>
+              <tr><td><strong>Omega Ltd</strong><br><span style="color:var(--text-muted); font-size:12px">Financeiro • 95 colaboradores</span></td><td>56.789.012/0001-45</td><td><span class="pill">ISO 27001</span><span class="pill">ISO 37001</span></td><td>Anual</td><td>Até 02/2028</td><td><a class="btn-ghost">Detalhes</a></td></tr>
             </tbody>
           </table>
         </div>
@@ -368,7 +381,7 @@
           <div><div class="crumb">Cadastros (Gestão)</div><h2>Normas &amp; Controles</h2></div>
           <div class="actions">
             <button class="btn btn-secondary">Importar CSV</button>
-            <button class="btn btn-primary" onclick="openModal('nova-norma')">+ Nova Norma</button>
+            <button class="btn btn-primary" data-roles="admin" onclick="openModal('nova-norma')">+ Nova Norma</button>
           </div>
         </div>
         <div class="grid grid-2" style="margin-bottom:20px;">
@@ -395,8 +408,8 @@
               <div style="padding:10px; border-bottom:1px solid var(--border);"><strong>6.</strong> Planejamento <span class="pill" style="margin-left:6px;">Gestão</span></div>
               <div style="padding:10px; border-bottom:1px solid var(--border);"><strong>7.</strong> Apoio
                 <div style="padding-left:16px; margin-top:6px; color:var(--text-muted); font-size:12px;">
-                  7.1.5.2 — Rastreabilidade de medição <span class="pill" style="background:#E3EEFA; color:#1F5897;">Produção</span><span class="pill" style="background:#E3EEFA; color:#1F5897;">Qualidade</span><br>
-                  7.2 — Competência <span class="pill" style="background:#E3EEFA; color:#1F5897;">RH</span>
+                  7.1.5.2 — Rastreabilidade de medição <span class="pill pill-info">Produção</span><span class="pill pill-info">Qualidade</span><br>
+                  7.2 — Competência <span class="pill pill-info">RH</span>
                 </div>
               </div>
               <div style="padding:10px; border-bottom:1px solid var(--border);"><strong>8.</strong> Operação <span class="pill" style="margin-left:6px;">Produção</span><span class="pill">Compras</span></div>
@@ -411,27 +424,27 @@
       <section id="view-processos" class="view" style="display:none">
         <div class="topbar">
           <div><div class="crumb">Cadastros (Gestão)</div><h2>Processos</h2></div>
-          <div class="actions"><button class="btn btn-primary" onclick="openModal('novo-processo')">+ Novo Processo</button></div>
+          <div class="actions"><button class="btn btn-primary" data-roles="admin" onclick="openModal('novo-processo')">+ Novo Processo</button></div>
         </div>
         <div class="info-banner">📌 <strong>Para que serve:</strong> os processos são o eixo pelo qual o auditor filtra a execução em campo. Ao auditar "Gestão de RH", o checklist mostra apenas os controles dessa categoria — sem precisar percorrer a norma inteira.</div>
         <div class="card">
-          <div style="display:flex; gap:12px; margin-bottom:16px;">
+          <div class="filter-bar">
             <input type="text" placeholder="Buscar processo..." style="flex:1">
             <select style="width:200px"><option>Todas as categorias</option><option>Operacional</option><option>Suporte</option><option>Gestão</option></select>
           </div>
           <table>
             <thead><tr><th>Código</th><th>Processo</th><th>Categoria</th><th>Controles Vinculados</th><th>Status</th><th></th></tr></thead>
             <tbody>
-              <tr><td><strong>RH</strong></td><td>Gestão de Recursos Humanos</td><td><span class="pill">Suporte</span></td><td>14 controles em 4 normas</td><td><span class="badge badge-concluida">Ativo</span></td><td><a class="btn-ghost" style="cursor:pointer">Editar</a></td></tr>
-              <tr><td><strong>DEV</strong></td><td>Desenvolvimento de Software</td><td><span class="pill">Operacional</span></td><td>22 controles em 3 normas</td><td><span class="badge badge-concluida">Ativo</span></td><td><a class="btn-ghost" style="cursor:pointer">Editar</a></td></tr>
-              <tr><td><strong>COM</strong></td><td>Compras e Fornecedores</td><td><span class="pill">Operacional</span></td><td>11 controles em 3 normas</td><td><span class="badge badge-concluida">Ativo</span></td><td><a class="btn-ghost" style="cursor:pointer">Editar</a></td></tr>
-              <tr><td><strong>VEN</strong></td><td>Vendas e Atendimento</td><td><span class="pill">Operacional</span></td><td>8 controles em 2 normas</td><td><span class="badge badge-concluida">Ativo</span></td><td><a class="btn-ghost" style="cursor:pointer">Editar</a></td></tr>
-              <tr><td><strong>TI</strong></td><td>Operações de TI &amp; Infra</td><td><span class="pill">Suporte</span></td><td>31 controles em 2 normas</td><td><span class="badge badge-concluida">Ativo</span></td><td><a class="btn-ghost" style="cursor:pointer">Editar</a></td></tr>
-              <tr><td><strong>BAK</strong></td><td>Backup e Recuperação</td><td><span class="pill">Suporte</span></td><td>9 controles em 2 normas</td><td><span class="badge badge-concluida">Ativo</span></td><td><a class="btn-ghost" style="cursor:pointer">Editar</a></td></tr>
-              <tr><td><strong>ACE</strong></td><td>Controles de Acesso</td><td><span class="pill">Suporte</span></td><td>15 controles em 2 normas</td><td><span class="badge badge-concluida">Ativo</span></td><td><a class="btn-ghost" style="cursor:pointer">Editar</a></td></tr>
-              <tr><td><strong>GST</strong></td><td>Governança e Riscos</td><td><span class="pill">Gestão</span></td><td>26 controles em 5 normas</td><td><span class="badge badge-concluida">Ativo</span></td><td><a class="btn-ghost" style="cursor:pointer">Editar</a></td></tr>
-              <tr><td><strong>QUA</strong></td><td>Garantia da Qualidade</td><td><span class="pill">Operacional</span></td><td>18 controles em 2 normas</td><td><span class="badge badge-concluida">Ativo</span></td><td><a class="btn-ghost" style="cursor:pointer">Editar</a></td></tr>
-              <tr><td><strong>FIN</strong></td><td>Financeiro e Contábil</td><td><span class="pill">Suporte</span></td><td>7 controles em 2 normas</td><td><span class="badge badge-concluida">Ativo</span></td><td><a class="btn-ghost" style="cursor:pointer">Editar</a></td></tr>
+              <tr><td><strong>RH</strong></td><td>Gestão de Recursos Humanos</td><td><span class="pill">Suporte</span></td><td>14 controles em 4 normas</td><td><span class="badge badge-concluida">Ativo</span></td><td><a class="btn-ghost">Editar</a></td></tr>
+              <tr><td><strong>DEV</strong></td><td>Desenvolvimento de Software</td><td><span class="pill">Operacional</span></td><td>22 controles em 3 normas</td><td><span class="badge badge-concluida">Ativo</span></td><td><a class="btn-ghost">Editar</a></td></tr>
+              <tr><td><strong>COM</strong></td><td>Compras e Fornecedores</td><td><span class="pill">Operacional</span></td><td>11 controles em 3 normas</td><td><span class="badge badge-concluida">Ativo</span></td><td><a class="btn-ghost">Editar</a></td></tr>
+              <tr><td><strong>VEN</strong></td><td>Vendas e Atendimento</td><td><span class="pill">Operacional</span></td><td>8 controles em 2 normas</td><td><span class="badge badge-concluida">Ativo</span></td><td><a class="btn-ghost">Editar</a></td></tr>
+              <tr><td><strong>TI</strong></td><td>Operações de TI &amp; Infra</td><td><span class="pill">Suporte</span></td><td>31 controles em 2 normas</td><td><span class="badge badge-concluida">Ativo</span></td><td><a class="btn-ghost">Editar</a></td></tr>
+              <tr><td><strong>BAK</strong></td><td>Backup e Recuperação</td><td><span class="pill">Suporte</span></td><td>9 controles em 2 normas</td><td><span class="badge badge-concluida">Ativo</span></td><td><a class="btn-ghost">Editar</a></td></tr>
+              <tr><td><strong>ACE</strong></td><td>Controles de Acesso</td><td><span class="pill">Suporte</span></td><td>15 controles em 2 normas</td><td><span class="badge badge-concluida">Ativo</span></td><td><a class="btn-ghost">Editar</a></td></tr>
+              <tr><td><strong>GST</strong></td><td>Governança e Riscos</td><td><span class="pill">Gestão</span></td><td>26 controles em 5 normas</td><td><span class="badge badge-concluida">Ativo</span></td><td><a class="btn-ghost">Editar</a></td></tr>
+              <tr><td><strong>QUA</strong></td><td>Garantia da Qualidade</td><td><span class="pill">Operacional</span></td><td>18 controles em 2 normas</td><td><span class="badge badge-concluida">Ativo</span></td><td><a class="btn-ghost">Editar</a></td></tr>
+              <tr><td><strong>FIN</strong></td><td>Financeiro e Contábil</td><td><span class="pill">Suporte</span></td><td>7 controles em 2 normas</td><td><span class="badge badge-concluida">Ativo</span></td><td><a class="btn-ghost">Editar</a></td></tr>
             </tbody>
           </table>
         </div>
@@ -441,7 +454,7 @@
       <section id="view-auditorias" class="view" style="display:none">
         <div class="topbar">
           <div><div class="crumb">Operação</div><h2>Auditorias</h2></div>
-          <div class="actions"><button class="btn btn-primary" onclick="openModal('nova-auditoria')">+ Nova Auditoria</button></div>
+          <div class="actions"><button class="btn btn-primary" data-roles="admin" onclick="openModal('nova-auditoria')">+ Nova Auditoria</button></div>
         </div>
         <div class="tabs">
           <a class="active">Todas</a><a>Planejadas</a><a>Em Execução</a><a>Pendentes Relatório</a><a>Concluídas</a><a>Atrasadas <span class="badge badge-atrasada" style="margin-left:4px">3</span></a>
@@ -483,7 +496,7 @@
 
         <div class="info-banner">
           📎 <strong>Plano de auditoria carregado:</strong> plano_acme_iso9001_2026.pdf (subido por João Silva em 02/06/2026 às 14h22)
-          <a class="btn-ghost" style="margin-left:auto; cursor:pointer">Substituir</a>
+          <a class="btn-ghost" style="margin-left:auto">Substituir</a>
         </div>
 
         <!-- FILTRO POR PROCESSO -->
@@ -537,7 +550,7 @@
             <textarea>Reforçar processo de integração com gate sistêmico no SAP HR antes da liberação para a área.</textarea>
             <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap">
               <span class="pill" style="background:#FFF2D6; color:#B8801C">📎 relatorio_integracao.xlsx</span>
-              <a class="btn-ghost" style="font-size:12px; cursor:pointer">+ Anexar</a>
+              <a class="btn-ghost" style="font-size:12px">+ Anexar</a>
             </div>
           </div>
 
@@ -641,7 +654,7 @@
           </div>
           <div class="form-row full">
             <div><label>Provedores SSO autorizados</label>
-            <div style="display:flex; gap:8px;"><span class="pill" style="background:#E3EEFA; color:#1F5897">✓ Google Workspace (dedalo.com.br)</span><span class="pill" style="background:#E3EEFA; color:#1F5897">✓ Microsoft Entra (dedalo.onmicrosoft.com)</span></div>
+            <div style="display:flex; gap:8px;"><span class="pill pill-info">✓ Google Workspace (dedalo.com.br)</span><span class="pill pill-info">✓ Microsoft Entra (dedalo.onmicrosoft.com)</span></div>
             </div>
           </div>
           <button class="btn btn-primary">Salvar</button>
@@ -672,18 +685,18 @@
     <div class="form-row full">
       <div><label>Normas que atende *</label>
         <div style="display:flex; flex-wrap:wrap; gap:6px;">
-          <label style="display:inline-flex; gap:6px; padding:6px 12px; border:1px solid var(--border); border-radius:6px; cursor:pointer; font-size:12px; text-transform:none; letter-spacing:0; font-weight:500;"><input type="checkbox" checked> ISO 9001</label>
-          <label style="display:inline-flex; gap:6px; padding:6px 12px; border:1px solid var(--border); border-radius:6px; cursor:pointer; font-size:12px; text-transform:none; letter-spacing:0; font-weight:500;"><input type="checkbox"> ISO 27001</label>
-          <label style="display:inline-flex; gap:6px; padding:6px 12px; border:1px solid var(--border); border-radius:6px; cursor:pointer; font-size:12px; text-transform:none; letter-spacing:0; font-weight:500;"><input type="checkbox" checked> ISO 14001</label>
-          <label style="display:inline-flex; gap:6px; padding:6px 12px; border:1px solid var(--border); border-radius:6px; cursor:pointer; font-size:12px; text-transform:none; letter-spacing:0; font-weight:500;"><input type="checkbox"> ISO 45001</label>
-          <label style="display:inline-flex; gap:6px; padding:6px 12px; border:1px solid var(--border); border-radius:6px; cursor:pointer; font-size:12px; text-transform:none; letter-spacing:0; font-weight:500;"><input type="checkbox"> ISO 37001</label>
-          <label style="display:inline-flex; gap:6px; padding:6px 12px; border:1px solid var(--border); border-radius:6px; cursor:pointer; font-size:12px; text-transform:none; letter-spacing:0; font-weight:500;"><input type="checkbox"> ISO 13485</label>
+          <label class="chip-check"><input type="checkbox" checked> ISO 9001</label>
+          <label class="chip-check"><input type="checkbox"> ISO 27001</label>
+          <label class="chip-check"><input type="checkbox" checked> ISO 14001</label>
+          <label class="chip-check"><input type="checkbox"> ISO 45001</label>
+          <label class="chip-check"><input type="checkbox"> ISO 37001</label>
+          <label class="chip-check"><input type="checkbox"> ISO 13485</label>
         </div>
       </div>
     </div>
     <div class="form-row full">
       <div><label>Certificados / Diplomas</label>
-        <div style="border:2px dashed var(--border); border-radius:8px; padding:24px; text-align:center; color:var(--text-muted);">📎 Arraste arquivos aqui ou <a class="btn-ghost" style="cursor:pointer">clique para selecionar</a><br><small>PDF, JPG ou PNG. Adicione tipo, emissão e validade para cada certificado.</small></div>
+        <div style="border:2px dashed var(--border); border-radius:8px; padding:24px; text-align:center; color:var(--text-muted);">📎 Arraste arquivos aqui ou <a class="btn-ghost">clique para selecionar</a><br><small>PDF, JPG ou PNG. Adicione tipo, emissão e validade para cada certificado.</small></div>
       </div>
     </div>
     <div class="modal-actions">
@@ -713,11 +726,11 @@
       <div><label>Processos a Auditar (filtro do checklist)</label>
         <div style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">Selecione um ou mais processos. O auditor verá no checklist apenas os controles vinculados. Deixe vazio para incluir todos.</div>
         <div style="display:flex; flex-wrap:wrap; gap:6px;">
-          <label style="display:inline-flex; gap:6px; padding:6px 12px; border:1px solid var(--border); border-radius:6px; cursor:pointer; font-size:12px; text-transform:none; letter-spacing:0; font-weight:500;"><input type="checkbox" checked> 👥 Gestão de RH</label>
-          <label style="display:inline-flex; gap:6px; padding:6px 12px; border:1px solid var(--border); border-radius:6px; cursor:pointer; font-size:12px; text-transform:none; letter-spacing:0; font-weight:500;"><input type="checkbox" checked> 💻 Desenvolvimento</label>
-          <label style="display:inline-flex; gap:6px; padding:6px 12px; border:1px solid var(--border); border-radius:6px; cursor:pointer; font-size:12px; text-transform:none; letter-spacing:0; font-weight:500;"><input type="checkbox" checked> 🛒 Compras</label>
-          <label style="display:inline-flex; gap:6px; padding:6px 12px; border:1px solid var(--border); border-radius:6px; cursor:pointer; font-size:12px; text-transform:none; letter-spacing:0; font-weight:500;"><input type="checkbox" checked> ⚖️ Governança</label>
-          <label style="display:inline-flex; gap:6px; padding:6px 12px; border:1px solid var(--border); border-radius:6px; cursor:pointer; font-size:12px; text-transform:none; letter-spacing:0; font-weight:500;"><input type="checkbox"> 🛡️ Acessos</label>
+          <label class="chip-check"><input type="checkbox" checked> 👥 Gestão de RH</label>
+          <label class="chip-check"><input type="checkbox" checked> 💻 Desenvolvimento</label>
+          <label class="chip-check"><input type="checkbox" checked> 🛒 Compras</label>
+          <label class="chip-check"><input type="checkbox" checked> ⚖️ Governança</label>
+          <label class="chip-check"><input type="checkbox"> 🛡️ Acessos</label>
         </div>
       </div>
     </div>
@@ -848,18 +861,7 @@
     document.getElementById('user-role').textContent = userMap[role].role;
     document.getElementById('console-badge').textContent = userMap[role].console;
 
-    document.querySelectorAll('[data-roles]').forEach(el => {
-      const roles = el.getAttribute('data-roles').split(',');
-      el.style.display = roles.includes(role) ? '' : 'none';
-    });
-
-    document.querySelectorAll('button').forEach(b => {
-      if (b.textContent.includes('+ Nova Auditoria') || b.textContent.includes('+ Novo Auditor') ||
-          b.textContent.includes('+ Novo Cliente') || b.textContent.includes('+ Nova Norma') ||
-          b.textContent.includes('+ Novo Processo')) {
-        b.style.display = role === 'admin' ? '' : 'none';
-      }
-    });
+    document.getElementById('page-app').dataset.role = role;
 
     go(role === 'auditor' ? 'auditorias' : 'dashboard');
   }

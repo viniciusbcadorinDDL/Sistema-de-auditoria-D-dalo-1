@@ -1,0 +1,60 @@
+# dependencies
+node_modules
+.pnp
+.pnp.js
+
+# testing
+coverage
+playwright-report
+test-results
+
+# next
+.next
+out
+build
+next-env.d.ts
+
+# typescript
+*.tsbuildinfo
+
+# production
+*.local
+
+# env
+.env
+.env.local
+.env.production
+.env*.local
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# IDE
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea
+*.swp
+*.swo
+.DS_Store
+
+# Prisma
+prisma/migrations/dev.db*
+
+# Postgres local (embedded-postgres) — dados do banco de dev
+.postgres-data/
+
+# uploads (apenas em dev local)
+uploads/
+
+# sentry
+.sentryclirc
+
+# vercel
+.vercel
+
+# turbo
+.turbo
